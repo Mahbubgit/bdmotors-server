@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 const app = express();
@@ -22,10 +22,8 @@ async function run() {
         app.get('/product', async (req, res) => {
             let products;
 
-            console.log('query', req.query);
             const selectedPage = parseInt(req.query.selectedPage);
             const pageLoadSize = parseInt(req.query.pageLoadSize);
-
             const query = {};
             const cursor = productCollection.find(query);
 
@@ -39,6 +37,7 @@ async function run() {
             res.send(products);
         });
 
+        // show featured Products
         app.get('/featureProduct', async (req, res) => {
             const query = {};
             const cursor = featureProductCollection.find(query);
@@ -46,10 +45,20 @@ async function run() {
             res.send(products);
         });
 
+        // show total product
         app.get('/productCount', async (req, res) => {
             const count = await productCollection.estimatedDocumentCount();
             res.send({ count });
-        })
+        });
+
+        // show a particular product details
+        app.get('/inventory/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const service = await productCollection.findOne(query);
+            res.send(service);
+        });
+
     }
     finally {
 
