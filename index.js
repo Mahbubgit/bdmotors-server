@@ -26,6 +26,7 @@ async function run() {
 
             const selectedPage = parseInt(req.query.selectedPage);
             const pageLoadSize = parseInt(req.query.pageLoadSize);
+
             const query = {};
             const cursor = productCollection.find(query);
 
@@ -39,18 +40,18 @@ async function run() {
             res.send(products);
         });
 
+        // show total product(For Pagination)
+        app.get('/productCount', async (req, res) => {
+            const count = await productCollection.estimatedDocumentCount();
+            res.send({ count });
+        });
+
         // show featured Products
         app.get('/featureProduct', async (req, res) => {
             const query = {};
             const cursor = featureProductCollection.find(query);
             const products = await cursor.toArray();
             res.send(products);
-        });
-
-        // show total product
-        app.get('/productCount', async (req, res) => {
-            const count = await productCollection.estimatedDocumentCount();
-            res.send({ count });
         });
 
         // show a particular product details
@@ -61,32 +62,53 @@ async function run() {
             res.send(product);
         });
 
-        // For update a product quantity
+        // **** For update a product by decrease quantity / restock quantity *****
         app.post('/inventory/:id', async (req, res) => {
             const id = req.params.id;
+            const restockQuantity = parseInt(req.query.restockQuantity);
+
             const query = { _id: ObjectId(id) };
             const filter = await updateProduct.findOne(query);
             const previousQuantity = parseInt(filter.quantity);
-            const options = {upsert: true};
-            const updateDoc ={
-                $set:{
-                    quantity: previousQuantity - 1,
-                },
-            };
+            // console.log(id, restockQuantity, previousQuantity);
+            let updateDoc;
+            const options = { upsert: true };
+
+            if (restockQuantity) {
+                updateDoc = {
+                    $set: {
+                        quantity: previousQuantity + restockQuantity,
+                    },
+                }
+            }
+            else {
+                updateDoc = {
+                    $set: {
+                        quantity: previousQuantity - 1,
+                    },
+                }
+            }
+
             const result = await updateProduct.updateOne(filter, updateDoc, options);
 
-            console.log(
-                `Updated ${result.modifiedCount} document`,
-              );
+            restockQuantity ?
+                console.log(
+                    `Restock ${result.modifiedCount} document`,
+                )
+                :
+                console.log(
+                    `Decrease quantity of ${result.modifiedCount} document`,
+                )
+
             res.send(result);
         });
 
         // For add a new item
-        app.post('/product', async (req, res) => {
-            const addNewItem = req.body;
-            const result = await productCollection.insertOne(addNewItem);
-            res.send(result);
-        });
+        // app.post('/product', async (req, res) => {
+        //     const addNewItem = req.body;
+        //     const result = await productCollection.insertOne(addNewItem);
+        //     res.send(result);
+        // });
     }
     finally {
 
