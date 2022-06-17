@@ -18,7 +18,6 @@ async function run() {
         await client.connect();
         const productCollection = client.db('bdMotors').collection('product');
         const featureProductCollection = client.db('bdMotors').collection('featureProduct');
-        const updateProduct = client.db('bdMotors').collection('product');
 
         // for pagination
         app.get('/product', async (req, res) => {
@@ -36,7 +35,15 @@ async function run() {
             else {
                 products = await cursor.toArray();
             }
-            // const products = await cursor.limit(5).toArray();
+            // const products = await cursor.limit(6).toArray();
+            res.send(products);
+        });
+
+        // for home page, 6 items have to be shown
+        app.get('/product/home', async (req, res) => {
+            const query = {};
+            const cursor = productCollection.find(query);
+            const products = await cursor.limit(6).toArray();
             res.send(products);
         });
 
@@ -68,7 +75,7 @@ async function run() {
             const restockQuantity = parseInt(req.query.restockQuantity);
 
             const query = { _id: ObjectId(id) };
-            const filter = await updateProduct.findOne(query);
+            const filter = await productCollection.findOne(query);
             const previousQuantity = parseInt(filter.quantity);
             // console.log(id, restockQuantity, previousQuantity);
             let updateDoc;
@@ -89,7 +96,7 @@ async function run() {
                 }
             }
 
-            const result = await updateProduct.updateOne(filter, updateDoc, options);
+            const result = await productCollection.updateOne(filter, updateDoc, options);
 
             restockQuantity ?
                 console.log(
@@ -103,12 +110,24 @@ async function run() {
             res.send(result);
         });
 
+        // For Delete a item
+        app.delete('/inventory/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await productCollection.deleteOne(query);
+            if (result.deletedCount === 1) {
+                console.log("Successfully deleted one document.");
+            }
+
+            res.send(result);
+        });
+
         // For add a new item
-        // app.post('/product', async (req, res) => {
-        //     const addNewItem = req.body;
-        //     const result = await productCollection.insertOne(addNewItem);
-        //     res.send(result);
-        // });
+        app.post('/product/addItem', async (req, res) => {
+            const addNewItem = req.body;
+            const result = await productCollection.insertOne(addNewItem);
+            res.send(result);
+        });
     }
     finally {
 
