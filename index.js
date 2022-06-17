@@ -18,7 +18,9 @@ async function run() {
         await client.connect();
         const productCollection = client.db('bdMotors').collection('product');
         const featureProductCollection = client.db('bdMotors').collection('featureProduct');
+        const updateProduct = client.db('bdMotors').collection('product');
 
+        // for pagination
         app.get('/product', async (req, res) => {
             let products;
 
@@ -55,10 +57,36 @@ async function run() {
         app.get('/inventory/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
-            const service = await productCollection.findOne(query);
-            res.send(service);
+            const product = await productCollection.findOne(query);
+            res.send(product);
         });
 
+        // For update a product quantity
+        app.post('/inventory/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const filter = await updateProduct.findOne(query);
+            const previousQuantity = parseInt(filter.quantity);
+            const options = {upsert: true};
+            const updateDoc ={
+                $set:{
+                    quantity: previousQuantity - 1,
+                },
+            };
+            const result = await updateProduct.updateOne(filter, updateDoc, options);
+
+            console.log(
+                `Updated ${result.modifiedCount} document`,
+              );
+            res.send(result);
+        });
+
+        // For add a new item
+        app.post('/product', async (req, res) => {
+            const addNewItem = req.body;
+            const result = await productCollection.insertOne(addNewItem);
+            res.send(result);
+        });
     }
     finally {
 
@@ -68,7 +96,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('BDMOTORS is running and waiting')
+    res.send('BDMOTORS is running')
 });
 
 app.listen(port, () => {
