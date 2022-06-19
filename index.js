@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
+// const port = process.env.PORT || 5000;
 const app = express();
 const res = require('express/lib/response');
 
@@ -20,7 +21,7 @@ function verifyJWT(req, res, next) {
     const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(403).send({ message: 'Forbidden access' });
+            return res.status(403).send({ message: 'Forbidden Access' });
         }
         console.log('decoded', decoded);
         req.decoded = decoded;
@@ -38,13 +39,13 @@ async function run() {
         const featureProductCollection = client.db('bdMotors').collection('featureProduct');
 
         // Authentication
-        // app.post('/login', async (req, res) => {
-        //     const user = req.body;
-        //     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        //         expiresIn: '1d'
-        //     });
-        //     res.send({ accessToken });
-        // })
+        app.post('/login', async (req, res) => {
+            const user = req.body;
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '1d'
+            });
+            res.send({ accessToken });
+        })
 
         // for pagination
         app.get('/product', async (req, res) => {
@@ -147,22 +148,6 @@ async function run() {
             res.send(result);
         });
 
-        // verify email by JWT Token
-
-        // app.get('/product', verifyJWT, async (req, res) => {
-        //     const decodedEmail = req.decoded.email;
-        //     const email = req.query.email;
-        //     if (email === decodedEmail) {
-        //         const query = { email: email };
-        //         const cursor = productCollection.find(query);
-        //         const result = await cursor.toArray();
-        //         res.send(result);
-        //     }
-        //     else {
-        //         res.status(403).send({ message: 'forbidden access' })
-        //     }
-        // })
-
         // For add a new item
         app.post('/product', async (req, res) => {
             const addNewItem = req.body;
@@ -170,12 +155,20 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/product/myItem', async (req, res) => {
+        // to get my added items
+        app.get('/product/myItem', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
             const email = req.query.email;
-            const query = {email: email};
-            const cursor = productCollection.find(query);
-            const products = await cursor.toArray();
-            res.send(products);
+            // verify email by JWT Token
+            if (email === decodedEmail) {
+                const query = { email: email };
+                const cursor = productCollection.find(query);
+                const products = await cursor.toArray();
+                res.send(products);
+            }
+            else{
+                res.status(403).send({message: 'Forbidden Access'})
+            }
         });
 
     }
