@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
-// const port = process.env.PORT || 5000;
 const app = express();
 const res = require('express/lib/response');
 
@@ -137,7 +136,8 @@ async function run() {
             res.send(result);
         });
 
-        // For Delete a item
+        // For Delete an item / DELETE ITEM API
+
         app.delete('/inventory/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
@@ -148,14 +148,16 @@ async function run() {
             res.send(result);
         });
 
-        // For add a new item
+        // For add a new item / ADD ITEM API
+
         app.post('/product', async (req, res) => {
             const addNewItem = req.body;
             const result = await productCollection.insertOne(addNewItem);
             res.send(result);
         });
 
-        // to get my added items
+        // to get my added items / SHOW MY ITEMS API
+        
         app.get('/product/myItem', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.query.email;
